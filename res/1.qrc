@@ -1,0 +1,17 @@
+<RCC>
+    <qresource prefix="/newPrefix">
+        <file>button.png</file>
+        <file>button2.png</file>
+        <file>24gl-extractLeft.png</file>
+        <file>sqrs.png</file>
+        <file>play_start.png</file>
+        <file>more.png</file>
+        <file>individual.png</file>
+        <file>search_button_2.png</file>
+        <file>ez_play.png</file>
+        <file>search_button.png</file>
+        <file>background.png</file>
+        <file>black.jpg</file>
+        <file>grey.jpg</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Widget</class>
+ <widget class="QWidget" name="Widget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1000</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1000</width>
+    <height>800</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1000</width>
+    <height>800</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Widget</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_2">
+   <item>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="styleSheet">
+      <string notr="true">QTabWidget::pane{
+min-width:70px;
+min-height:25px;
+border-top: 2px solid;
+
+}
+
+QTabBar::tab {
+
+min-width:70px;
+
+min-height:25px;
+
+
+
+font:12px &quot;Microsoft YaHei&quot;;
+
+border: 0px solid;
+
+
+
+}
+
+QTabBar::tab:selected{
+
+min-width:70px;
+
+min-height:25px;
+
+
+font:13px &quot;Microsoft YaHei&quot;;
+
+border: 0px solid;
+
+border-bottom: 2px solid;
+
+border-color: #4796f0;
+
+}</string>
+     </property>
+     <property name="inputMethodHints">
+      <set>Qt::ImhNone</set>
+     </property>
+     <property name="currentIndex">
+      <number>1</number>
+     </property>
+     <widget class="QWidget" name="tab_2">
+      <attribute name="title">
+       <string>系统管理</string>
+      </attribute>
+     </widget>
+     <widget class="QWidget" name="tab_3">
+      <attribute name="title">
+       <string>系统监控</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <widget class="QTabWidget" name="tabWidget_2">
+         <property name="styleSheet">
+          <string notr="true">QTabWidget::pane{
+min-width:70px;
+min-height:25px;
+border-top: 2px solid;
+
+}
+
+QTabBar::tab {
+
+min-width:70px;
+
+min-height:25px;
+
+/*background: #555;*/
+
+
+
+font:12px &quot;Microsoft YaHei&quot;;
+
+border: 0px solid;
+
+
+
+}
+
+QTabBar::tab:selected{
+
+min-width:70px;
+
+min-height:25px;
+
+
+font:13px &quot;Microsoft YaHei&quot;;
+
+border: 0px solid;
+
+border-bottom: 2px solid;
+
+border-color: #4796f0;
+
+}</string>
+         </property>
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
+         <widget class="QWidget" name="tab">
+          <attribute name="title">
+           <string>  摄像头1</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout">
+             <item>
+              <widget class="QLabel" name="video_label">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pullflow_pushButton">
+             <property name="text">
+              <string>  拉流</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="tab_4">
+          <attribute name="title">
+           <string>  摄像头2</string>
+          </attribute>
+          <widget class="QWidget" name="verticalLayoutWidget_2">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>421</width>
+             <height>241</height>
+            </rect>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_2"/>
+          </widget>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab1">
+      <attribute name="title">
+       <string> 系统工具</string>
+      </attribute>
+     </widget>
+     <widget class="QWidget" name="tab_5">
+      <attribute name="title">
+       <string>设备管理</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="0" colspan="2">
+        <widget class="QTableView" name="Data_tableView"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QPushButton" name="refresh_pushButton">
+         <property name="text">
+          <string>  刷新</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QPushButton" name="add_eqiopment_pushButton">
+         <property name="text">
+          <string>  新增设备</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_7">
+      <attribute name="title">
+       <string>消息管理</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="0" column="0" rowspan="2" colspan="2">
+        <widget class="QLabel" name="label_3">
+         <property name="styleSheet">
+          <string notr="true">color:wite</string>
+         </property>
+         <property name="text">
+          <string>Host</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLineEdit" name="Host_lineEdit">
+         <property name="text">
+          <string>127.0.0.1</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3" rowspan="3">
+        <widget class="QPushButton" name="connnect_pushButton">
+         <property name="text">
+          <string>Connect</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2" rowspan="2">
+        <widget class="QLineEdit" name="Port_lineEdit">
+         <property name="text">
+          <string>1883</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="2">
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>Port</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>Topic</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1" colspan="2">
+        <widget class="QLineEdit" name="Topic_lineEdit">
+         <property name="text">
+          <string>test</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="3">
+        <widget class="QPushButton" name="Subscribe_pushButton">
+         <property name="text">
+          <string>Subscribe</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0" colspan="3">
+        <widget class="QTextEdit" name="send_textEdit"/>
+       </item>
+       <item row="4" column="3">
+        <widget class="QTextEdit" name="receive_textEdit_2"/>
+       </item>
+       <item row="5" column="0" colspan="3">
+        <widget class="QPushButton" name="send_pushButton">
+         <property name="text">
+          <string> 发送</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="3">
+        <widget class="QPushButton" name="receive_pushButton">
+         <property name="text">
+          <string> 接收</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_6">
+      <attribute name="title">
+       <string>任务管理</string>
+      </attribute>
+     </widget>
+     <widget class="QWidget" name="tab_8">
+      <attribute name="title">
+       <string>页</string>
+      </attribute>
+      <widget class="QPushButton" name="add_epuipment_pushButton">
+       <property name="geometry">
+        <rect>
+         <x>238</x>
+         <y>351</y>
+         <width>75</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>新增设备</string>
+       </property>
+      </widget>
+      <widget class="QTableWidget" name="equipment_tableWidget">
+       <property name="geometry">
+        <rect>
+         <x>170</x>
+         <y>100</y>
+         <width>256</width>
+         <height>192</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="refresh_Equipment_pushButton">
+       <property name="geometry">
+        <rect>
+         <x>340</x>
+         <y>350</y>
+         <width>75</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>刷新</string>
+       </property>
+      </widget>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

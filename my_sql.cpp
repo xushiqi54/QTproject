@@ -43,7 +43,7 @@ my_sql::my_sql(QString Table)
 
     if(db.open())
     {
-        qDebug()<<" 连接成功 "<<endl;
+        qDebug()<<" 连接成功 "<<Table<<endl;
         m = new QSqlTableModel(nullptr, db);
         m->setTable(Table);
         m->setEditStrategy(QSqlTableModel::OnManualSubmit); // 可选：设置编辑策略
@@ -70,9 +70,6 @@ QSqlQuery my_sql::executeQuery(const QString &query)
 void my_sql::Insert(QString Ip,QString Name,QString T)
 {
 
-//    QString id = "001";
-//    QString Type = "msg";
-//QString msg = "Tmp = 16.8";
 
     QString sql = QString("insert into data values (%1, '%2', '%3');").arg(Name).arg(Ip).arg(T);
 
@@ -97,21 +94,68 @@ void my_sql::Find()
 }
 
 //向设备表中插入设备数据
-void my_sql::Insert2Equipment(int ID, QString Name, QString IP)
+void my_sql::Insert2Equipment(QString Device_id,QString IP,QString Battery,QString Condition,QString Update_time)
 {
-    QString sql = QString("insert into equipment values (%1, '%2', '%3');").arg(ID).arg(Name).arg(IP);
+    QString sql = QString("insert into equipment values ('%1', '%2', '%3','%4','%5');").arg(Device_id).arg(Battery).arg(Condition).arg(Update_time);
 
     qDebug()<<sql;
 
     QSqlQuery query;
-        query.prepare("INSERT INTO equipment (id, name, ip) VALUES (?, ?, ?)"); // 修复 SQL 注入
-        query.addBindValue(ID);
-        query.addBindValue(Name);
-        query.addBindValue(IP);
+    query.prepare("INSERT INTO equipment (Device_id, IP, Battery, Condition1, Update_time1) "
+                     "VALUES (:deviceId, :ip, :battery, :Condition, :Update_time1)");
+
+       // 正确绑定参数
+       query.bindValue(":deviceId", Device_id);
+       query.bindValue(":ip", IP);
+       query.bindValue(":battery", Battery);
+       query.bindValue(":Condition", Condition);
+       query.bindValue(":Update_time1", Update_time);
 
         if (query.exec()) {
             qDebug() << " 插入成功 ";
         } else {
             qDebug() << " 插入失败： " << query.lastError().text();
         }
+}
+
+//向用户表中插入数据
+void my_sql::Insert2User(QString USer_name, QString User_passwoed, QString User_power,QString logtime)
+{
+    QString sql = QString("insert into users values ('%1', '%2', '%3','%4');").arg(USer_name).arg(User_passwoed).arg(User_power).arg(logtime);
+
+    qDebug()<<sql;
+
+    QSqlQuery query;
+        query.prepare("INSERT INTO users (username, password, power,logtime) VALUES (?, ?, ?,?)"); // 修复 SQL 注入
+        query.addBindValue(USer_name);
+        query.addBindValue(User_passwoed);
+        query.addBindValue(User_power);
+        query.addBindValue(logtime);
+
+        if (query.exec()) {
+            qDebug() << " 插入成功 ";
+        } else {
+            qDebug() << " 插入失败： " << query.lastError().text();
+        }
+}
+
+void my_sql::Insert2Devicedata(QString Device_id, QString Smoke, QString temperature, QString humidness, QString Updata_time)
+{
+    QString sql = QString("insert into users values ('%1', '%2', '%3','%4');").arg(Device_id).arg(Smoke).arg(temperature).arg(humidness).arg(Updata_time);
+
+    qDebug()<<sql;
+
+
+    QSqlQuery query;
+    query.prepare("INSERT INTO devicedata (Device_id,Smoke,temperature,humidness,Updata_time) VALUES (?, ?, ?, ?, ?)");
+    query.addBindValue(Device_id);
+    query.addBindValue(Smoke);
+    query.addBindValue(temperature);
+    query.addBindValue(humidness);
+    query.addBindValue(Updata_time);
+    if (query.exec()) {
+        qDebug() << " 插入成功 ";
+    } else {
+        qDebug() << " 插入失败： " << query.lastError().text();
+    }
 }

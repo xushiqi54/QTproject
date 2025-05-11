@@ -4,21 +4,26 @@
 #include <QtMultimediaWidgets/QVideoWidget>
 #include <QFileDialog>
 #include <QUrl>
-#include<QDebug>
-#include<QTabBar>
-#include<QMessageBox>
-
+#include <QDebug>
+#include <QTabBar>
+#include <QMessageBox>
+#include <QSqlQuery>
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::Widget)
+    , m_isUserLoggedIn(false)
+    ,m_menuBar(nullptr) // 初始化菜单栏指针
 {
     ui->setupUi(this);
 
+    // 初始化登录相关UI
+    setupLoginUI();
+
     //设置设备表
     equipment_table = ui->equipment_tableWidget;
-    equipment_table->setColumnCount(3);
-    equipment_table->setHorizontalHeaderLabels({"ID","Name", "IP"});
+    equipment_table->setColumnCount(5);
+    equipment_table->setHorizontalHeaderLabels({"Device_id","IP", "Battery","Condition","Update_time"});
     equipment_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     equipment_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     equipment_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -28,16 +33,40 @@ Widget::Widget(QWidget *parent)
     //加载设备数据
     loadData_equipment();
     // 连接点击信号
-    connect(equipment_table, &QTableWidget::cellClicked, [this](int row, int){
+    connect(equipment_table, &QTableWidget::cellDoubleClicked, [this](int row, int){
         QTableWidgetItem *item = equipment_table->item(row, 0);
-        if(item) showDetail(item->data(Qt::UserRole).toInt());
+        if(item) showDetail(item->text());
      });
     // 启用右键菜单策略
     equipment_table->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(equipment_table, &QTableWidget::customContextMenuRequested,
             this, &Widget::onCustomContextMenuRequested);
 
+    // 初始化用户表
+    userTable = ui->user_tableWidget;
+    userTable->setColumnCount(4);
+    userTable->setHorizontalHeaderLabels({"UserName", "Password", "Power","logtime"});
+    userTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    userTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    userTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    //设置用户表指针
+    user_sql = new my_sql("users");
+    //加载用户数据
+    load_User();
+    // 启用右键菜单
+    userTable->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(userTable, &QTableWidget::customContextMenuRequested,
+            this, &Widget::onUserContextMenuRequested);
 
+    // 初始化设备信息表
+    DeviceDataTable = ui->devicedata_tableWidget;
+    DeviceDataTable->setColumnCount(5);
+    DeviceDataTable->setHorizontalHeaderLabels({"Device_Id", "Smoke", "temperature","humidness","Updata_time"});
+    DeviceDataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    DeviceDataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    DeviceDataTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    //设置设备数据表指针
+    device_sql = new my_sql("devicedata");
 
 
     m_pullFlowThread = new PullFlowThread;
@@ -50,8 +79,7 @@ Widget::Widget(QWidget *parent)
 
     //数据库初始化
     m_sql = new my_sql();
-    ui->Data_tableView->setModel(m_sql->getModel());
-    ui->Data_tableView->show();//显示表格
+
 
 
     //连接mqtt接收数据与sql插入数据
@@ -73,6 +101,8 @@ Widget::Widget(QWidget *parent)
 
 
     setFocus();
+    // 显示登录对话框
+    showLoginDialog();
 }
 
 Widget::~Widget()
@@ -191,35 +221,16 @@ void Widget::on_send_pushButton_clicked()
 }
 
 
-void Widget::on_refresh_pushButton_clicked()
-{
-    m_sql->getModel()->select();
-    ui->Data_tableView->viewport()->update();
-}
-
-//弹出添加设备的窗口
-void Widget::on_add_eqiopment_pushButton_clicked()
-{
-    Add_Equipment_Dialog Add_Equipment_Dialog(this);
-    connect(&Add_Equipment_Dialog,&Add_Equipment_Dialog::sendData,this,&Widget::receiveEquipment_From_AddEquipment);
-    Add_Equipment_Dialog.exec();
-}
-
-//接收窗口传过来的数据，并存入数据库
-void Widget::receiveData_From_AddEquipment(QString Ip, QString Name)
-{
-    qDebug()<<Ip<<' '<<Name<<endl;
-    m_sql->Insert(Ip,Name,"0");
-}
-
 //接收窗口传过来的设备数据，并存入数据库
 void Widget::receiveEquipment_From_AddEquipment(QString ip, QString Name)
 {
     qDebug()<<num_equipment<<' '<<Name<<' '<<ip<<endl;
-    equipment_sql->Insert2Equipment(num_equipment+1,Name,ip);
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    // 以自定义格式输出当前日期和时间，例如：yyyy-MM-dd hh:mm:ss
+    QString logtime = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
+    equipment_sql->Insert2Equipment(Name,ip,"0","off",logtime);
     loadData_equipment();
 }
-
 
 
 //加载设备数据
@@ -227,20 +238,16 @@ void Widget::loadData_equipment()
 {
     equipment_table->setRowCount(0);
     QSqlQuery query = equipment_sql->executeQuery(
-            "SELECT id, name, ip FROM equipment"); // 修改为你的表结构
+            "SELECT Device_id, IP, Battery, Condition1, Update_time1 FROM equipment"); // 修改为你的表结构
 
         int row = 0;
         while (query.next()) {
             equipment_table->insertRow(row);
-
-            // 第一列存储ID
-            QTableWidgetItem *idItem = new QTableWidgetItem(
-                    query.value(1).toString()); // 显示用户名
-            idItem->setData(Qt::UserRole, query.value(0)); // 存储用户ID
-            equipment_table->setItem(row, 0, idItem);
-
+            equipment_table->setItem(row, 0, new QTableWidgetItem(query.value(0).toString()));
             equipment_table->setItem(row, 1, new QTableWidgetItem(query.value(1).toString()));
             equipment_table->setItem(row, 2, new QTableWidgetItem(query.value(2).toString()));
+            equipment_table->setItem(row, 3, new QTableWidgetItem(query.value(3).toString()));
+            equipment_table->setItem(row, 4, new QTableWidgetItem(query.value(4).toString()));
 
             row++;
         }
@@ -248,9 +255,9 @@ void Widget::loadData_equipment()
 }
 
 //显示设备详情
-void Widget::showDetail(int id)
+void Widget::showDetail(QString name)
 {
-    qDebug()<<id<<endl;
+    qDebug()<<name<<endl;
     QDialog dialog(this);
         dialog.setWindowTitle("Details");
 
@@ -258,25 +265,32 @@ void Widget::showDetail(int id)
 
         // 查询详细信息
         QSqlQuery query;
-        query.prepare("SELECT * FROM users WHERE user_id = ?");
-        query.addBindValue(id);
-
-        if (query.exec() && query.next()) {
-            QString details = QString("ID: %1\nName: %2\nEmail: %3")
-                .arg(query.value(0).toString())
-                .arg(query.value(1).toString())
-                .arg(query.value(2).toString());
-
-            layout->addWidget(new QLabel(details, &dialog));
-        } else {
+        query.prepare("SELECT * FROM devicedata WHERE Device_Id = ?");
+        query.addBindValue(name);
+        if (query.exec()) {
+            qDebug()<<name<<endl;
+            DeviceDataTable->setRowCount(0);
+            int row = 0;
+            while (query.next()) {
+                DeviceDataTable->insertRow(row);
+                DeviceDataTable->setItem(row, 0, new QTableWidgetItem(query.value(0).toString()));
+                DeviceDataTable->setItem(row, 1, new QTableWidgetItem(query.value(1).toString()));
+                DeviceDataTable->setItem(row, 2, new QTableWidgetItem(query.value(2).toString()));
+                DeviceDataTable->setItem(row, 3, new QTableWidgetItem(query.value(3).toString()));
+                DeviceDataTable->setItem(row, 4, new QTableWidgetItem(query.value(4).toString()));
+                row++;
+             }
+        }
+        else {
             layout->addWidget(new QLabel("Details not found", &dialog));
+            QPushButton *closeBtn = new QPushButton("Close", &dialog);
+            connect(closeBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+            layout->addWidget(closeBtn);
+            dialog.exec();
+            DeviceDataTable->setRowCount(0);
         }
 
-        QPushButton *closeBtn = new QPushButton("Close", &dialog);
-        connect(closeBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
-        layout->addWidget(closeBtn);
 
-        dialog.exec();
 }
 
 //新增设备
@@ -310,28 +324,30 @@ void Widget::onCustomContextMenuRequested(const QPoint &pos)
     menu.exec(equipment_table->viewport()->mapToGlobal(pos));
 }
 
-// 获取当前选中设备的ID
-int Widget::getSelectedDeviceId()
+// 获取当前选中设备的Device_id
+QString Widget::getSelectedDeviceId()
 {
     int row = equipment_table->currentRow();
-    if (row == -1) return -1;
+    if (row == -1) return "";
 
     QTableWidgetItem *item = equipment_table->item(row, 0);
-    return item->data(Qt::UserRole).toInt();
+    return item->text();
 }
+
 // 修改设备
 void Widget::modifyDevice()
 {
-    int deviceId = getSelectedDeviceId();
-    if (deviceId == -1) return;
+    QString deviceId = getSelectedDeviceId();
+    if (deviceId == "") return;
 
     showModifyDialog(deviceId);
+    loadData_equipment();
 }
 // 删除设备
 void Widget::deleteDevice()
 {
-    int deviceId = getSelectedDeviceId();
-    if (deviceId == -1) return;
+    QString deviceId = getSelectedDeviceId();
+    if (deviceId == "") return;
 
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(this, " 确认删除  ",
@@ -340,7 +356,7 @@ void Widget::deleteDevice()
 
     if (reply == QMessageBox::Yes) {
         QSqlQuery query;
-        query.prepare("DELETE FROM equipment WHERE id = ?");
+        query.prepare("DELETE FROM equipment WHERE Device_id = ?");
         query.addBindValue(deviceId);
 
         if (query.exec()) {
@@ -353,11 +369,11 @@ void Widget::deleteDevice()
 }
 
 // 显示修改对话框
-void Widget::showModifyDialog(int deviceId)
+void Widget::showModifyDialog(QString deviceId)
 {
     // 查询当前设备信息
     QSqlQuery query;
-    query.prepare("SELECT * FROM equipment WHERE id = ?");
+    query.prepare("SELECT * FROM equipment WHERE Device_id = ?");
     query.addBindValue(deviceId);
 
     if (!query.exec() || !query.next()) {
@@ -388,8 +404,8 @@ void Widget::showModifyDialog(int deviceId)
         QSqlQuery updateQuery;
         updateQuery.prepare(
             "UPDATE equipment SET "
-            "name = ?, ip = ? "
-            "WHERE id = ?");
+            "Device_id = ?, IP = ? "
+            "WHERE Device_id = ?");
         updateQuery.addBindValue(nameEdit->text());
         updateQuery.addBindValue(ipEdit->text());
         updateQuery.addBindValue(deviceId);
@@ -402,4 +418,285 @@ void Widget::showModifyDialog(int deviceId)
         }
     }
 }
+
+
+//添加用户按钮点击
+void Widget::on_add_user_pushButton_clicked()
+{
+    add_user_Dialog add_user_Dialog(this);
+    connect(&add_user_Dialog,&add_user_Dialog::sendUser,this,&Widget::receiveUser_From_AddUser);
+    add_user_Dialog.exec();
+}
+// 刷新用户按钮点击
+void Widget::on_refresh_user_pushButton_clicked()
+{
+    qDebug()<<" refresh "<<endl;
+    load_User();
+}
+
+void Widget::receiveUser_From_AddUser(QString name, QString password, QString power)
+{
+    qDebug()<<name<<' '<<password<<endl;
+    // 仅获取当前日期
+    // 获取当前日期和时间
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    // 以自定义格式输出当前日期和时间，例如：yyyy-MM-dd hh:mm:ss
+    QString logtime = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
+    user_sql->Insert2User(name,password,power,logtime);
+    load_User();
+}
+
+void Widget::modifyUser()
+{
+    QString UserName = getSelectedUsername();
+    if (UserName == "") return;
+
+    showModifyUserDialog(UserName);
+    load_User();
+}
+// 显示用户修改对话框
+void Widget::showModifyUserDialog(QString UserName)
+{
+    // 查询当前设备信息
+    QSqlQuery query;
+    query.prepare("SELECT * FROM users WHERE username = ?");
+    query.addBindValue(UserName);
+
+    if (!query.exec() || !query.next()) {
+        QMessageBox::critical(this, "  错误  ", "  无法获取用户信息  ");
+        return;
+    }
+
+    // 创建对话框
+    QDialog dialog(this);
+    dialog.setWindowTitle(" 修改用户信息  ");
+    QFormLayout layout(&dialog);
+
+    // 创建输入框
+    QLineEdit *usernameEdit = new QLineEdit(query.value("username").toString());
+    QLineEdit *userPassowrdEdit = new QLineEdit(query.value("password").toString());
+    QLineEdit *userPowerEdit = new QLineEdit(query.value("power").toString());
+
+
+    layout.addRow("用户名称:", usernameEdit);
+    layout.addRow("用户密码:", userPassowrdEdit);
+    layout.addRow("用户权限:", userPowerEdit);
+
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+                             Qt::Horizontal, &dialog);
+    layout.addRow(&buttonBox);
+
+    connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        QSqlQuery updateQuery;
+        updateQuery.prepare(
+            "UPDATE users SET "
+            "username = ?, password = ?, power = ? "
+            "WHERE username = ?");
+        updateQuery.addBindValue(usernameEdit->text());
+        updateQuery.addBindValue(userPassowrdEdit->text());
+        updateQuery.addBindValue(userPowerEdit->text());
+        updateQuery.addBindValue(UserName);
+
+        if (updateQuery.exec()) {
+            loadData_equipment();
+            QMessageBox::information(this, "  成功  ", "  用户信息已更新  ");
+        } else {
+            QMessageBox::critical(this, "  错误  ", "  更新失败:   " + updateQuery.lastError().text());
+        }
+    }
+}
+
+
+//获取当前选中用户的name
+QString Widget::getSelectedUsername()
+{
+    int row = userTable->currentRow();
+    if (row == -1) return "";
+
+    QTableWidgetItem *item = userTable->item(row, 0);
+    return item->text();
+}
+void Widget::deleteUser()
+{
+    QString UserName = getSelectedUsername();
+    if (UserName=="") return;
+
+    QString username = getSelectedUsername();
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, " 确认删除  ",
+                                    "  确定要删除该用户吗？  ",
+                                    QMessageBox::Yes|QMessageBox::No);
+
+    if (reply == QMessageBox::Yes) {
+        QSqlQuery query;
+        query.prepare("DELETE FROM users WHERE username = ?");
+        query.addBindValue(username);
+
+        if (query.exec()) {
+            loadData_equipment();
+            QMessageBox::information(this, " 成功  ", "  用户已删除  ");
+        } else {
+            QMessageBox::critical(this, "  错误  ", "  删除失败:   " + query.lastError().text());
+        }
+   }
+    load_User();
+}
+
+void Widget::onUserContextMenuRequested(const QPoint &pos)
+{
+    QTableWidgetItem *item = userTable->itemAt(pos);
+            if (!item) return;
+
+    // 创建菜单
+    QMenu menu(this);
+    QAction *modifyAction = menu.addAction(" 修改用户信息 ");
+    QAction *deleteAction = menu.addAction(" 删除用户信息 ");
+
+    // 连接信号
+    connect(modifyAction, &QAction::triggered, this, &Widget::modifyUser);
+    connect(deleteAction, &QAction::triggered, this, &Widget::deleteUser);
+
+    menu.exec(equipment_table->viewport()->mapToGlobal(pos));
+}
+
+//加载用户数据
+void Widget::load_User()
+{
+    qDebug()<<"loaduser"<<endl;
+    userTable->setRowCount(0);
+    QSqlQuery query = user_sql->executeQuery(
+            "SELECT username, password, power,logtime FROM users"); // 修改为你的表结构
+
+    int row = 0;
+    while (query.next()) {
+        userTable->insertRow(row);
+        userTable->setItem(row, 0, new QTableWidgetItem(query.value(0).toString()));
+        userTable->setItem(row, 1, new QTableWidgetItem(query.value(1).toString()));
+        userTable->setItem(row, 2, new QTableWidgetItem(query.value(2).toString()));
+        userTable->setItem(row, 3, new QTableWidgetItem(query.value(3).toString()));
+
+        row++;
+    }
+}
+
+void Widget::load_devicedata()
+{
+
+}
+
+// 新增用户认证函数
+bool Widget::authenticateUser(const QString &username, const QString &password)
+{
+    // 在实际应用中，这里应该查询数据库或其他认证系统
+    // 示例：从数据库验证用户
+    QSqlQuery query;
+    query.prepare("SELECT * FROM users WHERE username = ? AND password = ?");
+    query.addBindValue(username);
+    query.addBindValue(password);
+
+    if (query.exec() && query.next()) {
+        qDebug() << " 用户认证成功:" << username;
+        return true;
+    }
+
+    qDebug() << " 用户认证失败: " << username;
+    return false;
+}
+
+// 设置登录相关UI元素
+void Widget::setupLoginUI()
+{
+    // 创建菜单栏并添加到布局
+        m_menuBar = new QMenuBar(this);
+        QVBoxLayout *mainLayout = new QVBoxLayout(this);
+
+        // 如果UI已经有布局，先移除
+        if (layout()) {
+            QLayoutItem *item;
+            while ((item = layout()->takeAt(0)) != nullptr) {
+                if (item->widget())
+                    mainLayout->addWidget(item->widget());
+                delete item;
+            }
+            delete layout();
+        }
+        // 添加菜单栏到布局顶部
+            mainLayout->setMenuBar(m_menuBar);
+
+            QMenu *systemMenu = m_menuBar->addMenu("  系统  ");
+
+            // 添加登出菜单项
+            m_logoutAction = new QAction("  退出登录  ", this);
+            connect(m_logoutAction, &QAction::triggered, this, &Widget::onLogoutActionTriggered);
+            systemMenu->addAction(m_logoutAction);
+
+            // 初始状态下禁用登出菜单项
+            m_logoutAction->setEnabled(false);
+}
+
+// 显示登录对话框
+void Widget::showLoginDialog()
+{
+    LoginDialog loginDialog(this);
+
+    while (true) {
+        if (loginDialog.exec() == QDialog::Accepted) {
+            QString username = loginDialog.getUsername();
+            QString password = loginDialog.getPassword();
+
+            if (authenticateUser(username, password)) {
+                m_isUserLoggedIn = true;
+                m_currentUsername = username; // 保存用户名
+                updateUIForLoginState();
+                break;
+            } else {
+                QMessageBox::critical(this, "  登录失败  ", "  用户名或密码错误!  ");
+            }
+        } else {
+            QApplication::quit();
+            return;
+        }
+    }
+}
+
+// 根据登录状态更新UI
+void Widget::updateUIForLoginState()
+{
+    m_logoutAction->setEnabled(m_isUserLoggedIn);
+
+    // 根据登录状态启用/禁用主界面元素
+    ui->tabWidget_2->setEnabled(m_isUserLoggedIn);
+    ui->receive_pushButton->setEnabled(m_isUserLoggedIn);
+    ui->connnect_pushButton->setEnabled(m_isUserLoggedIn);
+    // ... 其他需要控制的UI元素 ...
+
+    if (m_isUserLoggedIn) {
+        QMessageBox::information(this, "  登录成功  ", "  欢迎回来，  " + m_currentUsername);
+        // 加载数据等操作
+        show();
+        loadData_equipment();
+
+    }
+}
+
+//登录界面
+void Widget::onLogoutActionTriggered()
+{
+    QMessageBox::StandardButton reply = QMessageBox::question(
+            this, "  确认退出  ", "  确定要退出登录吗?  ", QMessageBox::Yes | QMessageBox::No);
+
+        if (reply == QMessageBox::Yes) {
+            m_isUserLoggedIn = false;
+            m_currentUsername.clear(); // 清除当前用户名
+            updateUIForLoginState();
+            // 隐藏主窗口
+            hide();
+            showLoginDialog();
+        }
+
+}
+
 

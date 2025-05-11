@@ -17,7 +17,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     add_equipment_dialog.cpp \
-    login_diolog.cpp \
+    add_user_dialog.cpp \
+    login_dialog.cpp \
     main.cpp \
     my_mqtt_client.cpp \
     my_sql.cpp \
@@ -26,7 +27,8 @@ SOURCES += \
 
 HEADERS += \
     add_equipment_dialog.h \
-    login_diolog.h \
+    add_user_dialog.h \
+    login_dialog.h \
     my_mqtt_client.h \
     my_sql.h \
     pullflowthread.h \
@@ -35,6 +37,7 @@ HEADERS += \
 FORMS += \
     ImppTs.ui \
     add_equipment_dialog.ui \
+    add_user_dialog.ui \
     widget.ui
 
 # Default rules for deployment.
